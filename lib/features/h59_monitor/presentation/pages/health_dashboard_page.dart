@@ -21,8 +21,16 @@ class HealthDashboardPage extends StatelessWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              // Refresh data
+              print('🔄 Refresh requested');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.bluetooth_disabled, color: Colors.white),
             onPressed: () {
+              print('❌ Disconnect requested');
               context.read<H59Bloc>().add(DisconnectFromH59Event());
               Navigator.of(context).pushReplacementNamed('/');
             },
@@ -32,9 +40,15 @@ class HealthDashboardPage extends StatelessWidget {
       ),
       body: BlocBuilder<H59Bloc, H59State>(
         builder: (context, state) {
+          print('🎨 Dashboard state: $state');
+
           if (state is H59ConnectedState) {
             final metrics = state.metrics;
             final deviceInfo = state.deviceInfo;
+
+            print(
+              '📊 Current metrics: ${metrics?.heartRate} bpm, ${metrics?.bloodOxygen}% SpO2',
+            );
 
             return SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -42,7 +56,11 @@ class HealthDashboardPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Steps Chart Area (simplified)
+                  // Device Info Banner
+                  _buildDeviceInfoBanner(deviceInfo),
+                  const SizedBox(height: 16),
+
+                  // Steps Chart Area
                   _buildStepsChart(metrics?.steps ?? 0),
                   const SizedBox(height: 24),
 
@@ -58,7 +76,7 @@ class HealthDashboardPage extends StatelessWidget {
                       HealthMetricCard(
                         title: 'Heart Rate',
                         date: _formatDate(metrics?.lastUpdate),
-                        value: '${metrics?.heartRate ?? 102}',
+                        value: '${metrics?.heartRate ?? '--'}',
                         unit: 'bpm',
                         icon: Icons.favorite,
                         color: const Color(0xFFFF6B9D),
@@ -82,7 +100,7 @@ class HealthDashboardPage extends StatelessWidget {
                       HealthMetricCard(
                         title: 'Exercise record',
                         date: _formatDate(DateTime.now()),
-                        value: '--',
+                        value: '${metrics?.calories ?? '--'}',
                         unit: 'kcal',
                         icon: Icons.directions_run,
                         color: const Color(0xFFFF9B54),
@@ -149,7 +167,7 @@ class HealthDashboardPage extends StatelessWidget {
                       HealthMetricCard(
                         title: 'HRV',
                         date: _formatDate(DateTime.now()),
-                        value: '${metrics?.hrv ?? 49}',
+                        value: '${metrics?.hrv ?? '--'}',
                         unit: 'ms',
                         icon: Icons.favorite_border,
                         color: const Color(0xFFFF6B9D),
@@ -161,7 +179,7 @@ class HealthDashboardPage extends StatelessWidget {
                       HealthMetricCard(
                         title: 'Stress',
                         date: _formatDate(metrics?.lastUpdate),
-                        value: '${metrics?.stress ?? 47}',
+                        value: '${metrics?.stress ?? '--'}',
                         unit: 'Normal',
                         icon: Icons.psychology,
                         color: const Color(0xFF6BDDFF),
@@ -181,6 +199,58 @@ class HealthDashboardPage extends StatelessWidget {
             child: CircularProgressIndicator(color: Colors.white),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDeviceInfoBanner(Map<String, String> deviceInfo) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1D1E33),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.watch, color: Color(0xFF6BB8E8), size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  deviceInfo['name'] ?? 'H59 Device',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'FW: ${deviceInfo['firmwareVersion'] ?? 'Unknown'}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.circle, color: Colors.green, size: 8),
+                SizedBox(width: 4),
+                Text(
+                  'Connected',
+                  style: TextStyle(color: Colors.green, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -232,7 +302,7 @@ class HealthDashboardPage extends StatelessWidget {
           const Expanded(
             child: Center(
               child: Text(
-                'Step data chart will appear here',
+                'Real-time step data',
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ),
